@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Xml.Linq;
+using System.Text.RegularExpressions;
 
 namespace Decision
 {
@@ -15,7 +17,7 @@ namespace Decision
 
         public ExpressionProvider(IDictionary<string, string> expressions, PolicyProvider provider)
         {
-            this.expressions = expressions;
+            this.expressions = expressions.ToDictionary(x => x.Key, x => Reduce(x.Value));
             this.provider = provider;
         }
 
@@ -38,7 +40,7 @@ namespace Decision
                     throw new ConfigurationErrorsException("All expressions must specify a 'value'.", item.ToXmlNode());
                 }
 
-                expressions[(string)key] = (string)value;
+                expressions[(string)key] = Reduce((string)value);
             }
         }
 
@@ -51,6 +53,19 @@ namespace Decision
             }
 
             return built[context.Role];
+        }
+
+        private string Reduce(string input)
+        {
+            var output = input;
+
+            output = Regex.Replace(output, @"(?<=\W)AND(?=\W)", "&", RegexOptions.IgnoreCase);
+            output = Regex.Replace(output, @"(?<=\W)OR(?=\W)", "|", RegexOptions.IgnoreCase);
+            output = Regex.Replace(output, @"\.", "&");
+            output = Regex.Replace(output, @"\+", "|");
+            output = Regex.Replace(output, @"\s", "");
+
+            return output;
         }
 
         private Expression Parse(string input)
@@ -79,9 +94,7 @@ namespace Decision
                         break;
 
                     case '&':
-                    case '.':
                     case '|':
-                    case '+':
                         if (depth == 0)
                         {
                             if (variable.Length > 0)
@@ -117,11 +130,6 @@ namespace Decision
 
         private Expression Combine(Expression lhs, Expression rhs, char operation)
         {
-            return Combine(lhs, rhs, operation.ToString());
-        }
-
-        private Expression Combine(Expression lhs, Expression rhs, string operation)
-        {
             if (lhs == null)
             {
                 return rhs;
@@ -129,14 +137,10 @@ namespace Decision
 
             switch (operation)
             {
-                case "AND":
-                case "&":
-                case ".":
+                case '&':
                     return Expression.AndAlso(lhs, rhs);
 
-                case "OR":
-                case "|":
-                case "+":
+                case '|':
                     return Expression.OrElse(lhs, rhs);
 
                 default:

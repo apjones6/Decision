@@ -6,8 +6,8 @@
     <item key="C" value="Decision.Policies.GammaPolicy" />
   </policies>
   <expressions provider="Decision.ExpressionProvider">
-    <item key="X" value="(A+C).B" />
-    <item key="Y" value="(A.C)+(A.B)+(A.B.C)" />
-    <item key="Z" value="B" />
+    <item key="X" value="(A OR C) AND B" />
+    <item key="Y" value="(A . C) | (A AND B) OR (A . B &amp; C)" />
+    <item key="Z" value="(B)" />
   </expressions>
 </configuration>
