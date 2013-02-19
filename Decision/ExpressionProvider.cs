@@ -72,6 +72,7 @@ namespace Decision
         {
             Expression expression = null;
             var variable = string.Empty;
+            var not = false;
             var operation = '&';
             var depth = 0;
 
@@ -87,8 +88,21 @@ namespace Decision
                         depth--;
                         if (depth == 0)
                         {
-                            expression = Combine(expression, Parse(variable), operation);
+                            expression = Combine(expression, Parse(variable), operation, not);
                             variable = string.Empty;
+                            not = false;
+                        }
+
+                        break;
+
+                    case '!':
+                        if (depth == 0)
+                        {
+                            not = true;
+                        }
+                        else
+                        {
+                            variable += c;
                         }
 
                         break;
@@ -99,8 +113,9 @@ namespace Decision
                         {
                             if (variable.Length > 0)
                             {
-                                expression = Combine(expression, Call(variable), operation);
+                                expression = Combine(expression, Call(variable), operation, not);
                                 variable = string.Empty;
+                                not = false;
                             }
 
                             operation = c;
@@ -121,15 +136,20 @@ namespace Decision
             // Ensure we don't drop the last variable
             if (variable.Length > 0)
             {
-                expression = Combine(expression, Call(variable), operation);
+                expression = Combine(expression, Call(variable), operation, not);
                 variable = string.Empty;
             }
 
             return expression;
         }
 
-        private Expression Combine(Expression lhs, Expression rhs, char operation)
+        private Expression Combine(Expression lhs, Expression rhs, char operation, bool not)
         {
+            if (not)
+            {
+                rhs = Expression.Not(rhs);
+            }
+
             if (lhs == null)
             {
                 return rhs;
