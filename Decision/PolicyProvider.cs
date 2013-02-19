@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace Decision
 {
@@ -17,6 +19,33 @@ namespace Decision
             }
 
             this.policies = policies;
+        }
+
+        public PolicyProvider(XElement settings)
+        {
+            policies = new Dictionary<string, Type>();
+            foreach (var item in settings.Elements("item"))
+            {
+                var key = item.Attribute("key");
+                if (key == null || string.IsNullOrWhiteSpace((string)key))
+                {
+                    throw new ConfigurationErrorsException("All policies must specify a unique 'key'.", item.ToXmlNode());
+                }
+
+                var value = item.Attribute("value");
+                if (value == null || string.IsNullOrWhiteSpace((string)value))
+                {
+                    throw new ConfigurationErrorsException("All policies must specify an IPolicy policy type 'value'.", item.ToXmlNode());
+                }
+
+                var type = Type.GetType((string)value, false);
+                if (type == null || type.GetInterface(typeof(IPolicy).FullName) == null)
+                {
+                    throw new ConfigurationErrorsException("All policies must implement 'Decision.IPolicy'.", item.ToXmlNode());
+                }
+
+                policies[(string)key] = type;
+            }
         }
 
         public IPolicy Get(string alias)

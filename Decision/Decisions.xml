@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <policies>
+    <item key="A" value="Decision.Policies.AlphaPolicy" />
+    <item key="B" value="Decision.Policies.BetaPolicy" />
+    <item key="C" value="Decision.Policies.GammaPolicy" />
+  </policies>
+  <expressions provider="Decision.ExpressionProvider">
+    <item key="X" value="(A+C).B" />
+    <item key="Y" value="(A.C)+(A.B)+(A.B.C)" />
+    <item key="Z" value="B" />
+  </expressions>
+</configuration>

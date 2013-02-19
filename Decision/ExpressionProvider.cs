@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq.Expressions;
+using System.Xml.Linq;
 
 namespace Decision
 {
@@ -8,28 +10,50 @@ namespace Decision
     {
         private readonly IDictionary<string, Predicate<DecisionContext>> built = new Dictionary<string, Predicate<DecisionContext>>();
         private readonly IDictionary<string, string> expressions;
-        private readonly ParameterExpression contextParameter;
+        private readonly ParameterExpression contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
         private readonly PolicyProvider provider;
 
         public ExpressionProvider(IDictionary<string, string> expressions, PolicyProvider provider)
         {
             this.expressions = expressions;
-            this.contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
             this.provider = provider;
+        }
+
+        public ExpressionProvider(XElement settings, PolicyProvider provider)
+        {
+            expressions = new Dictionary<string, string>();
+            this.provider = provider;
+
+            foreach (var item in settings.Elements("item"))
+            {
+                var key = item.Attribute("key");
+                if (key == null || string.IsNullOrWhiteSpace((string)key))
+                {
+                    throw new ConfigurationErrorsException("All expressions must specify a unique 'key'.", item.ToXmlNode());
+                }
+
+                var value = item.Attribute("value");
+                if (value == null || string.IsNullOrWhiteSpace((string)value))
+                {
+                    throw new ConfigurationErrorsException("All expressions must specify a 'value'.", item.ToXmlNode());
+                }
+
+                expressions[(string)key] = (string)value;
+            }
         }
 
         public Predicate<DecisionContext> Inflate(DecisionContext context)
         {
             if (built.ContainsKey(context.Role) == false)
             {
-                var expression = Expression.Lambda<Predicate<DecisionContext>>(Build(expressions[context.Role]), contextParameter);
+                var expression = Expression.Lambda<Predicate<DecisionContext>>(Parse(expressions[context.Role]), contextParameter);
                 built[context.Role] = expression.Compile();
             }
 
             return built[context.Role];
         }
 
-        private Expression Build(string input)
+        private Expression Parse(string input)
         {
             Expression expression = null;
             var variable = string.Empty;
@@ -48,19 +72,21 @@ namespace Decision
                         depth--;
                         if (depth == 0)
                         {
-                            expression = Append(expression, Build(variable), operation);
+                            expression = Combine(expression, Parse(variable), operation);
                             variable = string.Empty;
                         }
 
                         break;
 
                     case '&':
+                    case '.':
                     case '|':
+                    case '+':
                         if (depth == 0)
                         {
                             if (variable.Length > 0)
                             {
-                                expression = Append(expression, Call(variable), operation);
+                                expression = Combine(expression, Call(variable), operation);
                                 variable = string.Empty;
                             }
 
@@ -82,26 +108,39 @@ namespace Decision
             // Ensure we don't drop the last variable
             if (variable.Length > 0)
             {
-                expression = Append(expression, Call(variable), operation);
+                expression = Combine(expression, Call(variable), operation);
                 variable = string.Empty;
             }
 
             return expression;
         }
 
-        private Expression Append(Expression lhs, Expression rhs, char operation)
+        private Expression Combine(Expression lhs, Expression rhs, char operation)
+        {
+            return Combine(lhs, rhs, operation.ToString());
+        }
+
+        private Expression Combine(Expression lhs, Expression rhs, string operation)
         {
             if (lhs == null)
             {
                 return rhs;
             }
-            else if (operation == '&')
+
+            switch (operation)
             {
-                return Expression.AndAlso(lhs, rhs);
-            }
-            else
-            {
-                return Expression.OrElse(lhs, rhs);
+                case "AND":
+                case "&":
+                case ".":
+                    return Expression.AndAlso(lhs, rhs);
+
+                case "OR":
+                case "|":
+                case "+":
+                    return Expression.OrElse(lhs, rhs);
+
+                default:
+                    throw new InvalidOperationException(string.Format("The operation '{0}' is not recognized", operation));
             }
         }
 
