@@ -11,6 +11,10 @@ namespace Decision
             decisionProvider = new DecisionProvider("Decisions.xml");
 
             // Execute
+            F(new DecisionContext("T", "Alpha"));
+            T(new DecisionContext("T", "Beta"));
+            Console.WriteLine();
+
             F(new DecisionContext("U", "Alpha"));
             T(new DecisionContext("U", "Beta"));
             Console.WriteLine();

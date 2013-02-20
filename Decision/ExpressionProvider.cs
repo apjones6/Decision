@@ -98,7 +98,7 @@ namespace Decision
                     case '!':
                         if (depth == 0)
                         {
-                            not = true;
+                            not = !not;
                         }
                         else
                         {

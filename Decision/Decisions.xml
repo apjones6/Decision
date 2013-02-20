@@ -6,7 +6,8 @@
     <item key="C" value="Decision.Policies.GammaPolicy" />
   </policies>
   <expressions provider="Decision.ExpressionProvider">
-    <item key="U" value="!A" />
+    <item key="T" value="!A" />
+    <item key="U" value="!!B" />
     <item key="V" value="!(!!(!C))" />
     <item key="W" value="(!A AND B) OR (A AND !B)" />
     <item key="X" value="(A OR C) AND B" />
