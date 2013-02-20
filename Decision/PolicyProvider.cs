@@ -48,7 +48,17 @@ namespace Decision
             }
         }
 
-        public IPolicy Get(string alias)
+        public Type GetType(string alias)
+        {
+            if (policies.ContainsKey(alias))
+            {
+                return policies[alias];
+            }
+
+            throw new ArgumentException(string.Format("No policy for alias '{0}' registered.", alias), "alias");
+        }
+
+        public IPolicy GetPolicy(string alias)
         {
             if (instances.ContainsKey(alias))
             {

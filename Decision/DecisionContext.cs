@@ -5,6 +5,11 @@
         private readonly string content;
         private readonly string role;
 
+        public DecisionContext(string role)
+            : this(role, "")
+        {
+        }
+
         public DecisionContext(string role, string content)
         {
             this.content = content;

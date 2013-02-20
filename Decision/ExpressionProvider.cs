@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Xml.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using System.Reflection;
 
 namespace Decision
 {
     public class ExpressionProvider
     {
+        private static readonly ParameterExpression contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
+        private static readonly MethodInfo decideMethod = typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) });
+
         private readonly IDictionary<string, Predicate<DecisionContext>> built = new Dictionary<string, Predicate<DecisionContext>>();
         private readonly IDictionary<string, string> expressions;
-        private readonly ParameterExpression contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
         private readonly PolicyProvider provider;
 
         public ExpressionProvider(IDictionary<string, string> expressions, PolicyProvider provider)
@@ -55,7 +58,7 @@ namespace Decision
             return built[context.Role];
         }
 
-        private string Reduce(string input)
+        private static string Reduce(string input)
         {
             var output = input;
 
@@ -143,7 +146,18 @@ namespace Decision
             return expression;
         }
 
-        private Expression Combine(Expression lhs, Expression rhs, char operation, bool not)
+        private Expression Call(string alias)
+        {
+            bool boolean;
+            if (bool.TryParse(alias, out boolean))
+            {
+                return Expression.Constant(boolean);
+            }
+
+            return Expression.Call(Expression.Constant(provider.GetPolicy(alias)), decideMethod, contextParameter);
+        }
+
+        private static Expression Combine(Expression lhs, Expression rhs, char operation, bool not)
         {
             if (not)
             {
@@ -166,11 +180,6 @@ namespace Decision
                 default:
                     throw new InvalidOperationException(string.Format("The operation '{0}' is not recognized", operation));
             }
-        }
-
-        private Expression Call(string alias)
-        {
-            return Expression.Call(Expression.Constant(provider.Get(alias)), typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) }), contextParameter);
         }
     }
 }

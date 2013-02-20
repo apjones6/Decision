@@ -5,7 +5,10 @@
     <item key="B" value="Decision.Policies.BetaPolicy" />
     <item key="C" value="Decision.Policies.GammaPolicy" />
   </policies>
-  <expressions provider="Decision.ExpressionProvider">
+  <expressions>
+    <item key="Q" value="tRuE" />
+    <item key="R" value="FALSE" />
+    <item key="S" value="!(A AND TRUE)" />
     <item key="T" value="!A" />
     <item key="U" value="!!B" />
     <item key="V" value="!(!!(!C))" />
