@@ -3,20 +3,26 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using System.Reflection;
 
 namespace Decision
 {
     public class ExpressionProvider
     {
-        private static readonly ParameterExpression contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
-        private static readonly MethodInfo decideMethod = typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) });
+        private static readonly ParameterExpression contextParameter;
+        private static readonly MethodInfo decideMethod;
 
-        private readonly IDictionary<string, Predicate<DecisionContext>> built = new Dictionary<string, Predicate<DecisionContext>>();
+        private readonly IDictionary<string, Predicate<DecisionContext>> compiled = new Dictionary<string, Predicate<DecisionContext>>();
         private readonly IDictionary<string, string> expressions;
         private readonly PolicyProvider provider;
+
+        static ExpressionProvider()
+        {
+            contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
+            decideMethod = typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) });
+        }
 
         public ExpressionProvider(IDictionary<string, string> expressions, PolicyProvider provider)
         {
@@ -49,13 +55,13 @@ namespace Decision
 
         public Predicate<DecisionContext> Inflate(DecisionContext context)
         {
-            if (built.ContainsKey(context.Role) == false)
+            if (compiled.ContainsKey(context.Role) == false)
             {
                 var expression = Expression.Lambda<Predicate<DecisionContext>>(Parse(expressions[context.Role]), contextParameter);
-                built[context.Role] = expression.Compile();
+                compiled[context.Role] = expression.Compile();
             }
 
-            return built[context.Role];
+            return compiled[context.Role];
         }
 
         private static string Reduce(string input)
