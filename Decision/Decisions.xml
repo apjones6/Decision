@@ -4,8 +4,12 @@
     <item key="A" value="Decision.Policies.AlphaPolicy" />
     <item key="B" value="Decision.Policies.BetaPolicy" />
     <item key="C" value="Decision.Policies.GammaPolicy" />
+    <item key="D" value="Decision.Policies.DeltaPolicy" occurrences="2" />
+    <item key="E" value="Decision.Policies.DeltaPolicy" occurrences="5" />
   </policies>
   <expressions>
+    <item key="O" value="D" />
+    <item key="P" value="E" />
     <item key="Q" value="tRuE" />
     <item key="R" value="FALSE" />
     <item key="S" value="!(A AND TRUE)" />

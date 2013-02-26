@@ -3,27 +3,20 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Xml.Linq;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
 
 namespace Decision
 {
     public class PolicyProvider
     {
-        private readonly IDictionary<string, IPolicy> instances = new Dictionary<string, IPolicy>();
-        private readonly IDictionary<string, Type> policies;
-
-        public PolicyProvider(IDictionary<string, Type> policies)
-        {
-            if (policies.Any(x => x.Value.GetInterface(typeof(IPolicy).FullName) == null))
-            {
-                throw new ArgumentException("All policies must implement the Decision.IPolicy interface.", "policies");
-            }
-
-            this.policies = policies;
-        }
+        // internal windsor container, so we don't need to worry about scope issues with components being added to the same
+        // container as any other code in the system. These policies should not really be available to access by other parts
+        // of the application anyway.
+        private static IWindsorContainer container = new WindsorContainer();
 
         public PolicyProvider(XElement settings)
         {
-            policies = new Dictionary<string, Type>();
             foreach (var item in settings.Elements("item"))
             {
                 var key = item.Attribute("key");
@@ -44,35 +37,42 @@ namespace Decision
                     throw new ConfigurationErrorsException("All policies must implement 'Decision.IPolicy'.", item.ToXmlNode());
                 }
 
-                policies[(string)key] = type;
+                container.Register(Component.For(type).Forward<IPolicy>().Named(key.Value).DependsOn(Dependencies(type, item).ToArray()));
             }
-        }
-
-        public Type GetType(string alias)
-        {
-            if (policies.ContainsKey(alias))
-            {
-                return policies[alias];
-            }
-
-            throw new ArgumentException(string.Format("No policy for alias '{0}' registered.", alias), "alias");
         }
 
         public IPolicy GetPolicy(string alias)
         {
-            if (instances.ContainsKey(alias))
-            {
-                return instances[alias];
-            }
+            return container.Resolve<IPolicy>(alias);
+        }
 
-            if (policies.ContainsKey(alias))
+        private static IEnumerable<Dependency> Dependencies(Type type, XElement item)
+        {
+            // Efficiency block to avoid doing reflection work if there are no more attributes than the bare minimum (key and value)
+            var attributes = item.Attributes();
+            if (attributes.Count() > 2)
             {
-                var policy = (IPolicy)Activator.CreateInstance(policies[alias]);
-                instances[alias] = policy;
-                return policy;
-            }
+                var constructors = type.GetConstructors();
+                var parameters = constructors
+                    .SelectMany(x => x.GetParameters())
+                    .Where(x => x.ParameterType.IsPrimitive)
+                    .ToArray();
 
-            throw new ArgumentException(string.Format("No policy for alias '{0}' registered.", alias), "alias");
+                foreach (var attribute in attributes)
+                {
+                    // Ignore if key, value, not primitive or simply not a parameter
+                    var name = attribute.Name.LocalName;
+                    var info = parameters.FirstOrDefault(x => x.Name == name);
+                    if (name == "key" || name == "value" || info == null)
+                    {
+                        continue;
+                    }
+
+                    // Convert type
+                    var value = Convert.ChangeType(attribute.Value, info.ParameterType);
+                    yield return Dependency.OnValue(name, value);
+                }
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Xml.Linq;
 
 namespace Decision
 {
@@ -10,53 +11,23 @@ namespace Decision
         {
             decisionProvider = new DecisionProvider("Decisions.xml");
 
-            // Execute
-            T(new DecisionContext("Q"));
-            Console.WriteLine();
+            var configuration = XElement.Load("Tests.xml");
+            string lastRole = null;
 
-            F(new DecisionContext("R"));
-            Console.WriteLine();
+            foreach (var test in configuration.Elements("test"))
+            {
+                var content = (string)test.Attribute("content");
+                var expect = bool.Parse(test.Attribute("expect").Value);
+                var role = test.Attribute("role").Value;
 
-            F(new DecisionContext("S", "Alpha"));
-            T(new DecisionContext("S", "Gamma"));
-            Console.WriteLine();
+                if (lastRole != role && lastRole != null)
+                {
+                    Console.WriteLine();
+                }
 
-            F(new DecisionContext("T", "Alpha"));
-            T(new DecisionContext("T", "Beta"));
-            Console.WriteLine();
-
-            F(new DecisionContext("U", "Alpha"));
-            T(new DecisionContext("U", "Beta"));
-            Console.WriteLine();
-
-            F(new DecisionContext("V", "Alpha"));
-            T(new DecisionContext("V", "Gamma"));
-            Console.WriteLine();
-
-            T(new DecisionContext("W", "Alpha"));
-            F(new DecisionContext("W", "Alpha Beta"));
-            T(new DecisionContext("W", "Beta"));
-            F(new DecisionContext("W", ""));
-            Console.WriteLine();
-
-            T(new DecisionContext("X", "Alpha Beta"));
-            F(new DecisionContext("X", "Alpha"));
-            F(new DecisionContext("X", "Alpha Gamma"));
-            T(new DecisionContext("X", "Alpha Beta Gamma"));
-            T(new DecisionContext("X", "Beta Gamma"));
-            Console.WriteLine();
-
-            T(new DecisionContext("Y", "Alpha Beta"));
-            T(new DecisionContext("Y", "Alpha Beta Gamma"));
-            T(new DecisionContext("Y", "Alpha Gamma"));
-            F(new DecisionContext("Y", "Beta Gamma"));
-            F(new DecisionContext("Y", "Alpha"));
-            Console.WriteLine();
-
-            F(new DecisionContext("Z", "Alpha"));
-            T(new DecisionContext("Z", "Beta"));
-            F(new DecisionContext("Z", "Gamma"));
-            Console.WriteLine();
+                Test(new DecisionContext(role, content), expect);
+                lastRole = role;
+            }
 
             // Wait
             Console.ReadKey();
@@ -75,16 +46,6 @@ namespace Decision
             Console.ForegroundColor = result == expected ? ConsoleColor.Green : ConsoleColor.Red;
             Console.WriteLine(result);
             Console.ResetColor();
-        }
-
-        static void T(DecisionContext context)
-        {
-            Test(context, true);
-        }
-
-        static void F(DecisionContext context)
-        {
-            Test(context, false);
         }
     }
 }

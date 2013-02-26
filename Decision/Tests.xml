@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <test role="O" expect="false" content="Delta" />
+  <test role="O" expect="true" content="Delta Delta" />
+
+  <test role="P" expect="false" content="Delta Delta Delta Delta" />
+  <test role="P" expect="true" content="Delta Delta Delta Delta Delta" />
+  
+  <test role="Q" expect="true" />
+  
+  <test role="R" expect="false" />
+  
+  <test role="S" expect="false" content="Alpha" />
+  <test role="S" expect="true" content="Gamma" />
+  
+  <test role="T" expect="false" content="Alpha" />
+  <test role="T" expect="true" content="Beta" />
+  
+  <test role="U" expect="false" content="Alpha" />
+  <test role="U" expect="true" content="Beta" />
+  
+  <test role="V" expect="false" content="Alpha" />
+  <test role="V" expect="true" content="Gamma" />
+  
+  <test role="W" expect="true" content="Alpha" />
+  <test role="W" expect="false" content="Alpha Beta" />
+  <test role="W" expect="true" content="Beta" />
+  <test role="W" expect="false" content="" />
+
+  <test role="X" expect="true" content="Alpha Beta" />
+  <test role="X" expect="false" content="Alpha" />
+  <test role="X" expect="false" content="Alpha Gamma" />
+  <test role="X" expect="true" content="Alpha Beta Gamma" />
+  <test role="X" expect="true" content="Beta Gamma" />
+
+  <test role="Y" expect="true" content="Alpha Beta" />
+  <test role="Y" expect="true" content="Alpha Beta Gamma" />
+  <test role="Y" expect="true" content="Alpha Gamma" />
+  <test role="Y" expect="false" content="Beta Gamma" />
+  <test role="Y" expect="false" content="Alpha" />
+
+  <test role="Z" expect="false" content="Alpha" />
+  <test role="Z" expect="true" content="Beta" />
+  <test role="Z" expect="false" content="Gamma" />
+</configuration>
