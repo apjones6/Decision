@@ -11,8 +11,8 @@ namespace Decision
 {
     public class ExpressionProvider
     {
-        private static readonly ParameterExpression contextParameter;
-        private static readonly MethodInfo decideMethod;
+        private static readonly ParameterExpression PARAMETER;
+        private static readonly MethodInfo METHOD_INFO;
 
         private readonly IDictionary<string, Predicate<DecisionContext>> compiled = new Dictionary<string, Predicate<DecisionContext>>();
         private readonly IDictionary<string, string> expressions;
@@ -20,8 +20,8 @@ namespace Decision
 
         static ExpressionProvider()
         {
-            contextParameter = Expression.Parameter(typeof(DecisionContext), "context");
-            decideMethod = typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) });
+            METHOD_INFO = typeof(IPolicy).GetMethod("Decide", new Type[] { typeof(DecisionContext) });
+            PARAMETER = Expression.Parameter(typeof(DecisionContext), "context");
         }
 
         public ExpressionProvider(IDictionary<string, string> expressions, PolicyProvider provider)
@@ -57,7 +57,7 @@ namespace Decision
         {
             if (compiled.ContainsKey(context.Role) == false)
             {
-                var expression = Expression.Lambda<Predicate<DecisionContext>>(Parse(expressions[context.Role]), contextParameter);
+                var expression = Expression.Lambda<Predicate<DecisionContext>>(Parse(expressions[context.Role]), PARAMETER);
                 compiled[context.Role] = expression.Compile();
             }
 
@@ -160,7 +160,7 @@ namespace Decision
                 return Expression.Constant(boolean);
             }
 
-            return Expression.Call(Expression.Constant(provider.GetPolicy(alias)), decideMethod, contextParameter);
+            return Expression.Call(Expression.Constant(provider.GetPolicy(alias)), METHOD_INFO, PARAMETER);
         }
 
         private static Expression Combine(Expression lhs, Expression rhs, char operation, bool not)
